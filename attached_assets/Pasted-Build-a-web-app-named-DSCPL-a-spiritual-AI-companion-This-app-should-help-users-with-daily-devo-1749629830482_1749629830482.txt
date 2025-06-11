@@ -1,0 +1,173 @@
+Build a web app named "DSCPL" – a spiritual AI companion. This app should help users with daily devotionals, prayer, meditation, and accountability. It must be structured as a Flask backend with an HTML/CSS/JS frontend, and it should store user progress using either replit.db or SQLite.
+
+✅ Core Features & User Flow
+1. Welcome Screen
+
+When the user visits the site, display:
+
+"What do you need today?"
+
+Show buttons for the following options:
+
+Daily Devotion 📖
+
+Watch Video Verse 🎥
+
+Full Video Bible 📺
+
+Daily Prayer 🙏
+
+Daily Meditation 🧘
+
+Daily Accountability 🛡️
+
+Just Chat 💬
+
+2. Category → Topic Selection
+
+Based on the user’s selection, show relevant topics from the list below. Add a “Something else…” text box for custom input.
+
+Devotion Topics:
+
+Dealing with Stress, Overcoming Fear, Depression, Relationships, Healing, Purpose & Calling, Anxiety
+
+Prayer Topics:
+
+Personal Growth, Healing, Family/Friends, Forgiveness, Finances, Work/Career
+
+Meditation Topics:
+
+Peace, God’s Presence, Strength, Wisdom, Faith
+
+Accountability Areas:
+
+Pornography, Alcohol, Drugs, Sex, Addiction, Laziness
+
+3. Weekly Goal Setting
+After topic selection, show:
+
+“By the end of this week, you will feel more connected to God and confident in resisting temptation.”
+
+Ask:
+
+“Would you like to begin?” ✅/❌
+
+If yes:
+
+Save to replit.db or SQLite
+
+Schedule reminders (simulate this using daily dashboard updates or local time-based triggers)
+
+📖 Content Format for Each Category
+Devotion:
+
+Bible verse (e.g. Philippians 4:6-7)
+
+Short prayer
+
+Faith declaration (e.g. “God is my refuge…”)
+
+Video suggestion (embed from YouTube)
+
+Prayer (ACTS Format):
+
+A → Praise
+
+C → Confess
+
+T → Thank God
+
+S → Ask for help
+
+Add a daily prayer prompt, e.g., “Pray for someone who hurt you.”
+
+Meditation:
+
+Verse focus (e.g., Psalm 46:10)
+
+Reflective prompts: “What does this reveal about God?”
+
+Breathing guide:
+
+Inhale 4s → Hold 4s → Exhale 4s
+
+Accountability:
+
+Scripture of strength
+
+Truth declaration (e.g., “I am not a slave to temptation”)
+
+Suggested alternate actions
+
+“I need help now” button:
+
+Shows quick scripture, encouragement
+
+Option to send in-app DM to mentor/contact (simulate chat within app, no SMS)
+
+🛠️ Technical Requirements
+Backend:
+
+Flask app
+
+Routes:
+
+/: welcome screen
+
+/devotion, /prayer, etc.
+
+/dashboard: shows progress
+
+/sos: emergency section
+
+Use replit.db or SQLite to store:
+
+User selections
+
+Daily completions
+
+Weekly goal status
+
+Frontend:
+
+Use HTML, CSS, JS (you can use Bootstrap for styling)
+
+Show the right forms and content based on user choices
+
+Show embedded video via <iframe> (e.g., from YouTube)
+
+Dashboard Page:
+
+List all completed devotionals, meditations, etc.
+
+Show current week’s goal and completion % (use a progress bar)
+
+Optional Chat Simulation:
+
+Add a simple in-app chat box on /just-chat route
+
+Simulate messages between AI and user
+
+Save chat history (local, not real-time)
+
+🧠 Additional Customization
+Allow users to choose:
+
+Program length: 7, 14, or 30 days
+
+Set custom goals
+
+Allow “Pause”, “Resume” or “Restart” past programs from dashboard
+
+🔐 API Integration (Simulated)
+Use the following endpoint to get example video content (add a sample call in Flask):
+
+h
+Copy
+Edit
+GET https://api.socialverseapp.com/posts/summary/get?page=1&page_size=1000
+Headers: { "Flic-Token": "flic_b1c6b09d98e2d4884f61b9b3131dbb27a6af84788e4a25db067a22008ea9cce5" }
+Parse and use video titles and URLs in the devotion section.
+
+🛡️ Final Note
+Do NOT use real SMS, push notifications, or Google login for now. All features (reminders, chat, dashboard) should be simulated within the app.
