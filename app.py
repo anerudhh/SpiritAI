@@ -16,7 +16,7 @@ db_manager = get_db_manager()
 
 # Page configuration
 st.set_page_config(
-    page_title="DSCPL - Spiritual AI Companion",
+    page_title="Spirit AI - Your Spiritual Companion",
     page_icon="🙏",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -79,7 +79,7 @@ def get_video_content():
 
 def render_welcome_page():
     """Render the welcome page"""
-    st.markdown("# 🙏 DSCPL")
+    st.markdown("# 🙏 Spirit AI")
     st.markdown("### Your Spiritual AI Companion")
     st.markdown("---")
     
@@ -143,7 +143,7 @@ def render_topic_selection():
     
     st.markdown("## Choose a topic:")
     
-    selected_topic = st.radio("", topics, key=f"{category}_topic")
+    selected_topic = st.radio("Select a topic:", topics, key=f"{category}_topic")
     
     st.markdown("### Or enter your own:")
     custom_topic = st.text_input("Something else...", key=f"{category}_custom")
@@ -345,19 +345,19 @@ def render_video_verse():
     sample_videos = [
         {
             'title': 'Philippians 4:13 - I Can Do All Things Through Christ',
-            'url': 'https://www.youtube.com/watch?v=KO6WlCLFqw4',
+            'url': 'https://www.youtube.com/watch?v=LYjBzQ_NCAM',
             'verse': 'I can do all this through him who gives me strength.',
             'reference': 'Philippians 4:13'
         },
         {
             'title': 'Psalm 23 - The Lord is My Shepherd',
-            'url': 'https://www.youtube.com/watch?v=GsNcOzGOm0k',
+            'url': 'https://www.youtube.com/watch?v=icoM5X-TIek',
             'verse': 'The Lord is my shepherd, I lack nothing.',
             'reference': 'Psalm 23:1'
         },
         {
             'title': 'John 3:16 - For God So Loved the World',
-            'url': 'https://www.youtube.com/watch?v=Wh1VU-_OF98',
+            'url': 'https://www.youtube.com/watch?v=kbx6eOCuZgA',
             'verse': 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.',
             'reference': 'John 3:16'
         }
@@ -421,7 +421,7 @@ def render_video_bible():
 
 def render_chat():
     """Render chat interface"""
-    st.markdown("# 💬 Chat with Your Spiritual Companion")
+    st.markdown("# 💬 Chat with Spirit AI")
     
     if st.button("← Back to Home"):
         navigate_to('welcome')
