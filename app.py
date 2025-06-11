@@ -4,6 +4,7 @@ import json
 import datetime
 from datetime import datetime, timedelta
 import os
+import random
 from data import DataManager
 from content import ContentProvider
 
@@ -279,15 +280,16 @@ def render_meditation_content():
     st.info("**Inhale for 4 seconds → Hold for 4 seconds → Exhale for 4 seconds**")
     
     if st.button("Start Guided Breathing"):
-        with st.empty():
-            for i in range(3):  # 3 cycles
-                st.markdown("### 🌬️ Inhale... (4s)")
-                st.wait(4)
-                st.markdown("### 🫁 Hold... (4s)")
-                st.wait(4)
-                st.markdown("### 💨 Exhale... (4s)")
-                st.wait(4)
-            st.success("Breathing exercise completed! 🧘‍♀️")
+        placeholder = st.empty()
+        import time
+        for i in range(3):  # 3 cycles
+            placeholder.markdown("### 🌬️ Inhale... (4s)")
+            time.sleep(1)
+            placeholder.markdown("### 🫁 Hold... (4s)")
+            time.sleep(1)
+            placeholder.markdown("### 💨 Exhale... (4s)")
+            time.sleep(1)
+        placeholder.success("Breathing exercise completed! 🧘‍♀️")
 
 def render_accountability_content():
     """Render accountability content"""
@@ -324,24 +326,59 @@ def render_video_verse():
     
     st.markdown("---")
     
+    # Sample spiritual videos for demonstration
+    sample_videos = [
+        {
+            'title': 'Philippians 4:13 - I Can Do All Things Through Christ',
+            'url': 'https://www.youtube.com/watch?v=KO6WlCLFqw4',
+            'verse': 'I can do all this through him who gives me strength.',
+            'reference': 'Philippians 4:13'
+        },
+        {
+            'title': 'Psalm 23 - The Lord is My Shepherd',
+            'url': 'https://www.youtube.com/watch?v=GsNcOzGOm0k',
+            'verse': 'The Lord is my shepherd, I lack nothing.',
+            'reference': 'Psalm 23:1'
+        },
+        {
+            'title': 'John 3:16 - For God So Loved the World',
+            'url': 'https://www.youtube.com/watch?v=Wh1VU-_OF98',
+            'verse': 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.',
+            'reference': 'John 3:16'
+        }
+    ]
+    
+    # Try to get video content from API first
     video_data = get_video_content()
     
-    if video_data:
+    if video_data and 'data' in video_data and video_data['data']:
         st.markdown("## Today's Video Verse")
-        # Display video content from API
-        if 'data' in video_data and video_data['data']:
-            video_item = video_data['data'][0]  # Get first video
-            st.markdown(f"**{video_item.get('title', 'Spiritual Video')}**")
-            
-            video_url = video_item.get('video_url') or video_item.get('url')
-            if video_url:
-                st.video(video_url)
-            else:
-                st.warning("Video URL not available for this content.")
+        video_item = video_data['data'][0]  # Get first video
+        st.markdown(f"**{video_item.get('title', 'Spiritual Video')}**")
+        
+        video_url = video_item.get('video_url') or video_item.get('url')
+        if video_url:
+            st.video(video_url)
         else:
-            st.warning("No video content available at the moment.")
+            st.warning("Video URL not available for this content.")
     else:
-        st.error("Unable to fetch video content. Please try again later.")
+        # Use sample videos as fallback
+        st.markdown("## Today's Video Verse")
+        selected_video = random.choice(sample_videos)
+        
+        st.markdown(f"**{selected_video['title']}**")
+        st.markdown(f"*{selected_video['verse']}*")
+        st.markdown(f"**{selected_video['reference']}**")
+        
+        st.video(selected_video['url'])
+        
+        st.markdown("### More Video Verses")
+        for i, video in enumerate(sample_videos):
+            if video != selected_video:
+                with st.expander(f"{video['title']}"):
+                    st.markdown(f"*{video['verse']}*")
+                    st.markdown(f"**{video['reference']}**")
+                    st.video(video['url'])
 
 def render_video_bible():
     """Render full video bible content"""
@@ -376,26 +413,32 @@ def render_chat():
     
     st.markdown("---")
     
-    # Display chat history
-    for message in st.session_state.chat_history:
-        if message['sender'] == 'user':
-            st.markdown(f"**You:** {message['text']}")
+    # Display chat history in containers
+    chat_container = st.container()
+    
+    with chat_container:
+        if st.session_state.chat_history:
+            for message in st.session_state.chat_history:
+                if message['sender'] == 'user':
+                    with st.chat_message("user"):
+                        st.write(message['text'])
+                else:
+                    with st.chat_message("assistant"):
+                        st.write(message['text'])
         else:
-            st.markdown(f"**DSCPL:** {message['text']}")
+            st.info("Welcome! I'm here to support you on your spiritual journey. How can I help you today?")
     
-    # Chat input
-    user_input = st.text_input("Type your message:", key="chat_input")
-    
-    if st.button("Send") and user_input:
+    # Chat input at bottom
+    if prompt := st.chat_input("Type your message here..."):
         # Add user message
         st.session_state.chat_history.append({
             'sender': 'user',
-            'text': user_input,
+            'text': prompt,
             'timestamp': datetime.now().isoformat()
         })
         
-        # Generate AI response (simulated)
-        ai_response = content_provider.get_ai_response(user_input)
+        # Generate AI response
+        ai_response = content_provider.get_ai_response(prompt)
         st.session_state.chat_history.append({
             'sender': 'ai',
             'text': ai_response,
