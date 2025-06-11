@@ -1,4 +1,41 @@
 import streamlit as st
+st.set_page_config(
+    page_title="Spirit AI - Your Spiritual Companion",
+    page_icon="🙏",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# --- Advanced Custom CSS for a modern, card-based UI ---
+def set_custom_css():
+    st.markdown(
+        """
+        <style>
+        body, .stApp { background: linear-gradient(135deg, #e0e7ff 0%, #f7f8fa 100%) !important; font-family: 'Segoe UI', Arial, sans-serif; }
+        .block-container { padding-top: 2.5rem; max-width: 900px; margin: auto; }
+        .stButton > button { background: linear-gradient(90deg, #4f8cff 0%, #2563eb 100%); color: white; border-radius: 10px; font-weight: 600; padding: 0.7rem 2rem; box-shadow: 0 2px 8px #2563eb22; border: none; transition: 0.2s; }
+        .stButton > button:hover { background: linear-gradient(90deg, #2563eb 0%, #4f8cff 100%); box-shadow: 0 4px 16px #2563eb33; }
+        .stRadio > div { background: #fff; border-radius: 12px; padding: 1.2rem; box-shadow: 0 2px 8px #2563eb11; }
+        .stTextInput > div > input { border-radius: 8px; border: 1px solid #d1d5db; padding: 0.5rem; }
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 { color: #2563eb; font-weight: 700; letter-spacing: -1px; }
+        .stInfo, .stSuccess, .stWarning, .stError { border-radius: 10px; font-size: 1.1rem; }
+        .stExpander { border-radius: 10px; background: #f1f5f9; }
+        .stColumns { gap: 2.5rem !important; }
+        .stAlert { border-radius: 10px; }
+        .st-cb { font-size: 1.1rem; }
+        /* Card style for main sections */
+        .main-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #2563eb11; padding: 2rem 2.5rem; margin-bottom: 2rem; }
+        /* Icon header */
+        .icon-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .icon-header h1 { margin: 0; font-size: 2.2rem; }
+        .icon-header span { font-size: 2.5rem; }
+        /* Section divider */
+        .section-divider { border: none; border-top: 2px solid #e0e7ff; margin: 2rem 0; }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 import requests
 import json
 import datetime
@@ -10,17 +47,10 @@ from content import ContentProvider
 from database import DatabaseManager, get_db_manager
 
 # Initialize managers
+set_custom_css()
 data_manager = DataManager()
 content_provider = ContentProvider()
 db_manager = get_db_manager()
-
-# Page configuration
-st.set_page_config(
-    page_title="Spirit AI - Your Spiritual Companion",
-    page_icon="🙏",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
 
 # Initialize session state and database
 if 'current_page' not in st.session_state:
