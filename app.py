@@ -7,10 +7,12 @@ import os
 import random
 from data import DataManager
 from content import ContentProvider
+from database import DatabaseManager, get_db_manager
 
-# Initialize data manager and content provider
+# Initialize managers
 data_manager = DataManager()
 content_provider = ContentProvider()
+db_manager = get_db_manager()
 
 # Page configuration
 st.set_page_config(
@@ -20,13 +22,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Initialize session state
+# Initialize session state and database
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'welcome'
 if 'user_data' not in st.session_state:
     st.session_state.user_data = data_manager.load_user_data()
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+if 'db_user' not in st.session_state:
+    # Create database tables if they don't exist
+    db_manager.create_tables()
+    # Get or create default user
+    st.session_state.db_user = db_manager.get_or_create_user()
 
 def navigate_to(page):
     """Navigate to a specific page"""
@@ -34,7 +41,11 @@ def navigate_to(page):
     st.rerun()
 
 def save_progress(category, topic, completed=True):
-    """Save user progress"""
+    """Save user progress to database"""
+    user_id = st.session_state.db_user.id
+    db_manager.save_progress(user_id, category, topic, completed)
+    
+    # Also save to JSON for backward compatibility
     today = datetime.now().strftime('%Y-%m-%d')
     if 'progress' not in st.session_state.user_data:
         st.session_state.user_data['progress'] = {}
@@ -172,7 +183,11 @@ def render_goal_setting():
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ Yes, Let's Start!", use_container_width=True):
-            # Save goal to user data
+            # Save goal to database
+            user_id = st.session_state.db_user.id
+            db_manager.create_goal(user_id, category, topic, program_length, start_date)
+            
+            # Also save to JSON for backward compatibility
             goal_data = {
                 'category': category,
                 'topic': topic,
