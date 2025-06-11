@@ -445,7 +445,12 @@ def render_chat():
     
     # Chat input at bottom
     if prompt := st.chat_input("Type your message here..."):
-        # Add user message
+        user_id = st.session_state.db_user.id
+        
+        # Save user message to database
+        db_manager.save_chat_message(user_id, 'user', prompt)
+        
+        # Add user message to session
         st.session_state.chat_history.append({
             'sender': 'user',
             'text': prompt,
@@ -454,6 +459,11 @@ def render_chat():
         
         # Generate AI response
         ai_response = content_provider.get_ai_response(prompt)
+        
+        # Save AI response to database
+        db_manager.save_chat_message(user_id, 'ai', ai_response)
+        
+        # Add AI response to session
         st.session_state.chat_history.append({
             'sender': 'ai',
             'text': ai_response,
@@ -463,7 +473,7 @@ def render_chat():
         st.rerun()
 
 def render_dashboard():
-    """Render user dashboard"""
+    """Render user dashboard with database integration"""
     st.markdown("# 📊 Your Spiritual Journey Dashboard")
     
     if st.button("← Back to Home"):
@@ -471,41 +481,95 @@ def render_dashboard():
     
     st.markdown("---")
     
-    user_data = st.session_state.user_data
+    user_id = st.session_state.db_user.id
     
-    # Weekly goals
-    if 'goals' in user_data and user_data['goals']:
+    # Get comprehensive stats from database
+    stats = db_manager.get_user_stats(user_id)
+    
+    # Display overview stats
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Activities", stats['total_activities'])
+    with col2:
+        st.metric("Total Goals", stats['total_goals'])
+    with col3:
+        st.metric("Active Goals", stats['active_goals'])
+    with col4:
+        completion_rate = round((stats['total_activities'] / max(stats['total_goals'], 1)) * 100, 1)
+        st.metric("Completion Rate", f"{completion_rate}%")
+    
+    # Current Goals from database
+    goals = db_manager.get_user_goals(user_id, active_only=True)
+    if goals:
         st.markdown("## 🎯 Current Goals")
-        for goal in user_data['goals']:
-            with st.expander(f"{goal['category'].title()} - {goal['topic']}"):
-                st.markdown(f"**Program Length:** {goal['program_length']} days")
-                st.markdown(f"**Started:** {goal['start_date']}")
+        for goal in goals:
+            with st.expander(f"{goal.category.title()} - {goal.topic}"):
+                st.markdown(f"**Program Length:** {goal.program_length} days")
+                st.markdown(f"**Started:** {goal.start_date.strftime('%Y-%m-%d')}")
                 
                 # Calculate progress
-                start_date = datetime.fromisoformat(goal['start_date']).date()
-                days_elapsed = (datetime.now().date() - start_date).days
-                progress = min(days_elapsed / goal['program_length'] * 100, 100)
+                days_elapsed = (datetime.now().date() - goal.start_date.date()).days
+                progress = min(days_elapsed / goal.program_length * 100, 100)
                 
                 st.progress(progress / 100)
                 st.markdown(f"Progress: {progress:.1f}%")
+                
+                if st.button(f"Mark Goal Complete", key=f"complete_{goal.id}"):
+                    # Update goal status in database
+                    from database import Goal
+                    db_manager.session.query(Goal).filter_by(id=goal.id).update({'is_active': False})
+                    db_manager.session.commit()
+                    st.success("Goal marked as complete!")
+                    st.rerun()
     
-    # Daily progress
-    if 'progress' in user_data and user_data['progress']:
-        st.markdown("## 📈 Recent Activity")
+    # Recent Activity from database
+    recent_progress = db_manager.get_user_progress(user_id, days=7)
+    if recent_progress:
+        st.markdown("## 📈 Recent Activity (Last 7 Days)")
         
-        # Get last 7 days of progress
-        today = datetime.now().date()
-        last_week = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
+        # Group by date
+        activity_by_date = {}
+        for progress in recent_progress:
+            date_str = progress.completion_date.strftime('%Y-%m-%d')
+            if date_str not in activity_by_date:
+                activity_by_date[date_str] = []
+            activity_by_date[date_str].append(progress)
         
-        for date in last_week:
-            if date in user_data['progress']:
-                st.markdown(f"**{date}:**")
-                for category, data in user_data['progress'][date].items():
-                    st.markdown(f"  ✅ {category.title()}: {data['topic']}")
-            else:
-                st.markdown(f"**{date}:** No activity")
+        # Display activities
+        for date_str in sorted(activity_by_date.keys(), reverse=True):
+            st.markdown(f"**{date_str}:**")
+            for progress in activity_by_date[date_str]:
+                st.markdown(f"  ✅ {progress.category.title()}: {progress.topic}")
     else:
         st.info("Start your spiritual journey today! Complete your first devotion, prayer, or meditation to see your progress here.")
+    
+    # Category breakdown chart
+    if stats['category_breakdown']:
+        st.markdown("## 📊 Activity Breakdown by Category")
+        
+        categories = list(stats['category_breakdown'].keys())
+        values = list(stats['category_breakdown'].values())
+        
+        # Create a simple bar chart
+        chart_data = {}
+        for cat, val in stats['category_breakdown'].items():
+            chart_data[cat.title()] = val
+        
+        st.bar_chart(chart_data)
+    
+    # Load chat history from database
+    if st.button("🔄 Load Chat History from Database"):
+        chat_history = db_manager.get_chat_history(user_id)
+        st.session_state.chat_history = [
+            {
+                'sender': msg.sender,
+                'text': msg.message_text,
+                'timestamp': msg.timestamp.isoformat()
+            }
+            for msg in chat_history
+        ]
+        st.success("Chat history loaded from database!")
+        st.rerun()
 
 def render_sos():
     """Render emergency support page"""
@@ -535,7 +599,7 @@ def render_sos():
         navigate_to('chat')
 
 def render_settings():
-    """Render settings page"""
+    """Render settings page with database integration"""
     st.markdown("# ⚙️ Settings")
     
     if st.button("← Back to Home"):
@@ -543,31 +607,130 @@ def render_settings():
     
     st.markdown("---")
     
-    st.markdown("## Program Preferences")
+    user_id = st.session_state.db_user.id
     
-    default_program_length = st.selectbox("Default Program Length:", [7, 14, 30], key="default_program")
-    
-    st.markdown("## Data Management")
-    
+    # Database information
+    st.markdown("## 🗄️ Database Status")
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("📤 Export Progress", use_container_width=True):
-            data_json = json.dumps(st.session_state.user_data, indent=2)
+        st.info(f"**User ID:** {user_id}")
+        st.info(f"**Username:** {st.session_state.db_user.username}")
+    
+    with col2:
+        stats = db_manager.get_user_stats(user_id)
+        st.info(f"**Total Activities:** {stats['total_activities']}")
+        st.info(f"**Total Goals:** {stats['total_goals']}")
+    
+    st.markdown("## 🔧 Program Preferences")
+    default_program_length = st.selectbox("Default Program Length:", [7, 14, 30], key="default_program")
+    
+    st.markdown("## 📊 Data Management")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📤 Export All Data", use_container_width=True):
+            # Export user data from database
+            goals = db_manager.get_user_goals(user_id, active_only=False)
+            progress = db_manager.get_user_progress(user_id, days=365)
+            chat_history = db_manager.get_chat_history(user_id, limit=1000)
+            
+            export_data = {
+                'user': {
+                    'id': user_id,
+                    'username': st.session_state.db_user.username,
+                    'email': st.session_state.db_user.email
+                },
+                'goals': [
+                    {
+                        'category': goal.category,
+                        'topic': goal.topic,
+                        'program_length': goal.program_length,
+                        'start_date': goal.start_date.isoformat(),
+                        'is_active': goal.is_active
+                    }
+                    for goal in goals
+                ],
+                'progress': [
+                    {
+                        'category': prog.category,
+                        'topic': prog.topic,
+                        'completed': prog.completed,
+                        'completion_date': prog.completion_date.isoformat(),
+                        'notes': prog.notes
+                    }
+                    for prog in progress
+                ],
+                'chat_history': [
+                    {
+                        'sender': msg.sender,
+                        'message': msg.message_text,
+                        'timestamp': msg.timestamp.isoformat()
+                    }
+                    for msg in chat_history
+                ]
+            }
+            
             st.download_button(
-                label="Download Data",
-                data=data_json,
-                file_name="dscpl_progress.json",
+                "Download JSON Data",
+                data=json.dumps(export_data, indent=2),
+                file_name=f"dscpl_data_{datetime.now().strftime('%Y%m%d')}.json",
                 mime="application/json"
             )
     
     with col2:
         if st.button("🗑️ Clear All Data", use_container_width=True):
-            if st.button("⚠️ Confirm Clear All Data"):
+            if st.button("⚠️ Confirm Delete", use_container_width=True):
+                # Clear all user data from database
+                from database import ChatMessage, Progress, Goal
+                db_manager.session.query(ChatMessage).filter_by(user_id=user_id).delete()
+                db_manager.session.query(Progress).filter_by(user_id=user_id).delete()
+                db_manager.session.query(Goal).filter_by(user_id=user_id).delete()
+                db_manager.session.commit()
+                
+                # Clear session data
+                st.session_state.chat_history = []
                 st.session_state.user_data = {}
-                data_manager.save_user_data(st.session_state.user_data)
-                st.success("All data cleared successfully.")
+                
+                st.success("All data cleared successfully!")
                 st.rerun()
+    
+    # Database Operations
+    st.markdown("## 🛠️ Database Operations")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Test Connection"):
+            try:
+                test_user = db_manager.get_or_create_user("test_connection")
+                st.success("Database connection successful!")
+            except Exception as e:
+                st.error(f"Database connection failed: {str(e)}")
+    
+    with col2:
+        if st.button("Sync Session Data"):
+            # Sync any session data that might not be in database
+            for date, activities in st.session_state.user_data.get('progress', {}).items():
+                for category, data in activities.items():
+                    db_manager.save_progress(user_id, category, data['topic'], data['completed'])
+            st.success("Session data synced to database!")
+    
+    with col3:
+        if st.button("Load Chat History"):
+            chat_history = db_manager.get_chat_history(user_id)
+            st.session_state.chat_history = [
+                {
+                    'sender': msg.sender,
+                    'text': msg.message_text,
+                    'timestamp': msg.timestamp.isoformat()
+                }
+                for msg in chat_history
+            ]
+            st.success("Chat history loaded from database!")
+            st.rerun()
+    
+    if st.button("Save Settings"):
+        st.success("Settings saved successfully!")
 
 # Main app routing
 def main():
